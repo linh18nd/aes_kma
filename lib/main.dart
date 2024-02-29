@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:aes_kma/aes/aes.dart';
+import 'package:aes_kma/algorithms/lethoaes.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -32,20 +33,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   TextEditingController inputController1 = TextEditingController();
   TextEditingController inputController2 = TextEditingController();
-  Uint8List generatedKey = Uint8List(0);
+  String generatedKey = '';
   String data = '';
+  String data2 = '';
+  Duration duration = Duration();
 
   void _generateKey() {
-    generatedKey = generateRandomKey();
+    generatedKey = generateRandomKey(16);
 
     setState(() {});
-  }
-
-  Uint8List generateRandomKey() {
-    Random random = Random.secure();
-    List<int> randomBytes = List.generate(16, (index) => random.nextInt(256));
-
-    return Uint8List.fromList(randomBytes);
   }
 
   @override
@@ -62,11 +58,6 @@ class _MyHomePageState extends State<MyHomePage> {
             TextField(
               controller: inputController1,
               decoration: const InputDecoration(labelText: 'Input 1'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: inputController2,
-              decoration: const InputDecoration(labelText: 'Input 2'),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -85,6 +76,30 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               child: const Text('Gen'),
             ),
+            const SizedBox(height: 24),
+            Text(
+              data,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              duration.toString(),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(
+              height: 24,
+            ),
+            ElevatedButton(
+              onPressed: () {
+                decrypt();
+              },
+              child: const Text('Decrypt'),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              data2,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),
@@ -93,35 +108,67 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void encrypt() {
     var text = inputController1.text;
-    final obj = AES.withIV(generateRandomKey(), generateRandomKey());
+    // final now = DateTime.now();
+    // final AES aes = AES.withIV(Uint8List.fromList(generatedKey.codeUnits),
+    //     Uint8List.fromList(generatedKey.codeUnits));
 
-    while (text.length % 16 != 0) {
-      text += " ";
-    }
+    // final rt = aes.CBC_encrypt(Uint8List.fromList(text.codeUnits));
+    // setState(() {
+    //   duration = DateTime.now().difference(now);
+    //   data = convertBytesToString(rt);
+    //   print(data);
+    // });
 
-// Mã hóa văn bản thành mảng byte
-    final result = obj.encrypt(Uint8List.fromList(utf8.encode(text)));
+    // Uint8List bytes = convertStringToBytes(generatedKey);
+    // print("bytes: key:" + "$bytes");
 
-// Chuyển đổi kết quả thành chuỗi văn bản và cập nhật state
+    // var crypt = AesCrypt('my cool password');
+    // crypt.aesSetKeys(bytes, bytes);
+    // crypt.aesSetMode(AesMode.cbc);
+    // // Invalid data length for AES: 13 bytes.
+    // final encrypted = crypt.aesEncrypt(convertStringToBytes(text));
+    // setState(() {
+    //   data = convertBytesToString(encrypted);
+    // });
+
+    final aes = AES(convertStringToBytes(generatedKey));
+    final now = DateTime.now();
+    final rt = aes.ecbEncrypt(convertStringToBytes(text));
+    String test = convertBytesToString(convertStringToBytes(text));
+
     setState(() {
-      data = bitsToText(result);
+      duration = DateTime.now().difference(now);
+      data = convertBytesToString(rt);
+      print(data);
     });
   }
 
-  String bitsToText(Uint8List byteData) {
-    String text = utf8.decode(byteData);
-    return text;
+  void decrypt() {
+    var text = data;
+    final aes = AES(convertStringToBytes(generatedKey));
+    final now = DateTime.now();
+    final rt = aes.ecbDecrypt(convertStringToBytes(text));
+    setState(
+      () {
+        duration = DateTime.now().difference(now);
+        print(rt);
+        data2 = convertBytesToString(rt);
+        print(data2);
+      },
+    );
   }
 
-  Uint8List hexStringToBytes(String hexString) {
-    // Chia chuỗi hexa thành các cặp ký tự
-    Iterable<String> pairs = hexString.replaceAll(' ', '').split('');
+  String generateRandomKey(int size) {
+    var random = Random.secure();
+    var values = List<int>.generate(size, (i) => random.nextInt(256));
+    return base64Url.encode(values);
+  }
 
-    // Chuyển đổi các cặp ký tự thành các giá trị byte
-    List<int> bytes =
-        pairs.map((String hex) => int.parse(hex, radix: 16)).toList();
+  Uint8List convertStringToBytes(String text) {
+    return Uint8List.fromList(text.codeUnits);
+  }
 
-    // Chuyển đổi danh sách byte thành Uint8List
-    return Uint8List.fromList(bytes);
+  String convertBytesToString(Uint8List bytes) {
+    return String.fromCharCodes(bytes);
   }
 }
