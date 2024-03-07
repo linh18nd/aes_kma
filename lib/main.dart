@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:aes_kma/algorithms/lethoaes.dart';
 
+
+import 'package:aes_kma/algorithms/aes.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -40,7 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _generateKey() {
     generatedKey = generateRandomKey(16);
-
+    print("key: $generatedKey");
     setState(() {});
   }
 
@@ -131,10 +132,12 @@ class _MyHomePageState extends State<MyHomePage> {
     //   data = convertBytesToString(encrypted);
     // });
 
-    final aes = AES(convertStringToBytes(generatedKey));
+    final aes = AES(generatedKey.codeUnits);
     final now = DateTime.now();
-    final rt = aes.ecbEncrypt(convertStringToBytes(text));
+    final rt = aes.ecbEncrypt(text.codeUnits);
+    print("rt: $rt");
     String test = convertBytesToString(convertStringToBytes(text));
+    print("test: $test");
 
     setState(() {
       duration = DateTime.now().difference(now);
@@ -145,7 +148,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void decrypt() {
     var text = data;
-    final aes = AES(convertStringToBytes(generatedKey));
+    final aes = AES(Uint8List.fromList(generatedKey.codeUnits));
     final now = DateTime.now();
     final rt = aes.ecbDecrypt(convertStringToBytes(text));
     setState(
@@ -159,16 +162,25 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   String generateRandomKey(int size) {
-    var random = Random.secure();
-    var values = List<int>.generate(size, (i) => random.nextInt(256));
-    return base64Url.encode(values);
+    Random random = Random();
+    StringBuffer sb = StringBuffer();
+
+    for (int i = 0; i < size; i++) {
+      int randomNumber = random.nextInt(size);
+      int randomChar = (randomNumber < 10)
+          ? '0'.codeUnitAt(0) + randomNumber
+          : 'a'.codeUnitAt(0) + randomNumber - 10;
+      sb.write(String.fromCharCode(randomChar));
+    }
+
+    return sb.toString();
   }
 
   Uint8List convertStringToBytes(String text) {
-    return Uint8List.fromList(text.codeUnits);
+    return base64.decode(text);
   }
 
   String convertBytesToString(Uint8List bytes) {
-    return String.fromCharCodes(bytes);
+    return base64.encode(bytes);
   }
 }

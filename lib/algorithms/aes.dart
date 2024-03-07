@@ -1,88 +1,77 @@
 import 'dart:typed_data';
-import 'dart:math';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 
 class AES {
-  // current round index
   late int actual;
   late int Nk;
-  // number of rounds for current AES
   late int Nr;
-  // state
-  late List<List<Int32List>> state;
-  // key stuff
-  late Int32List w;
-  late Int32List key;
-  // Initialization vector (only for CBC)
-  Uint8List? iv;
+  late int Nb;
+  late List<List<List<int>>> state;
+  late List<int> w;
+  late List<int> key;
+  List<int>? iv;
 
-  AES(Uint8List key) {
-    init(key, null);
+  AES(List<int> key) {
+    init(key, key);
   }
 
-  AES.withIV(Uint8List key, Uint8List? iv) {
+  AES.withIV(Uint8List key, Uint8List iv) {
     init(key, iv);
   }
 
-  void init(Uint8List key, Uint8List? iv) {
+  void init(List<int> key, List<int> iv) {
     this.iv = iv;
-    this.key = Int32List(key.length);
-    for (int i = 0; i < key.length; i++) {
-      this.key[i] = key[i].toInt();
-    }
+
+    this.key = key;
+
+    print("key: $key");
+
     // AES standard (4*32) = 128 bits
-    int Nb = 4;
+    Nb = 4;
     switch (key.length) {
       case 16:
-        {
-          Nr = 10;
-          Nk = 4;
-        }
+        Nr = 10;
+        Nk = 4;
         break;
       case 24:
-        {
-          Nr = 12;
-          Nk = 6;
-        }
+        Nr = 12;
+        Nk = 6;
         break;
       case 32:
-        {
-          Nr = 14;
-          Nk = 8;
-        }
+        Nr = 14;
+        Nk = 8;
         break;
       default:
         throw ArgumentError('It only supports 128, 192 and 256 bit keys!');
     }
-    // The storage array creation for the states.
-    // Only 2 states with 4 rows and Nb columns are required.
-    state = List.generate(2, (i) => List.generate(4, (j) => Int32List(Nb)));
-    // The storage vector for the expansion of the key creation.
-    w = Int32List(Nb * (Nr + 1));
+
+    state = List.generate(
+        2, (i) => List.generate(4, (j) => List<int>.filled(Nb, 0)));
+
+    w = List<int>.filled(Nb * (Nr + 1), 0);
+
     // Key expansion
     expandKey();
   }
 
-  // The 128 bits of a state are an XOR offset applied to them with the 128 bits of the key expended.
-  // s: state matrix that has Nb columns and 4 rows.
-  // Round: A round of the key w to be added.
-  // s: returns the addition of the key per round
-  List<Int32List> addRoundKey(List<Int32List> s, int round) {
+  List<List<int>> addRoundKey(List<List<int>> s, int round) {
     for (int c = 0; c < Nb; c++) {
       for (int r = 0; r < 4; r++) {
-        s[r][c] = s[r][c] ^ (w[round * Nb + c] << (r * 8) >> 24);
+        s[r][c] ^= (w[round * Nb + c] << (r * 8)) & 0xFF;
       }
     }
     return s;
   }
 
-  // Cipher/Decipher methods
-  List<Int32List> cipher(List<Int32List> input, List<Int32List> output) {
+  void cipher(List<List<int>> input, List<List<int>> output) {
     for (int i = 0; i < input.length; i++) {
-      for (int j = 0; j < input.length; j++) {
+      for (int j = 0; j < input[i].length; j++) {
         output[i][j] = input[i][j];
       }
     }
-    actual = 0;
+    int actual = 0;
     addRoundKey(output, actual);
     actual = 1;
     while (actual < Nr) {
@@ -95,44 +84,44 @@ class AES {
     subBytes(output);
     shiftRows(output);
     addRoundKey(output, actual);
-    return output;
   }
 
-  List<Int32List> decipher(List<Int32List> input, List<Int32List> output) {
+  void decipher(List<List<int>> input, List<List<int>> output) {
     for (int i = 0; i < input.length; i++) {
-      for (int j = 0; j < input.length; j++) {
+      for (int j = 0; j < input[i].length; j++) {
         output[i][j] = input[i][j];
       }
     }
-    actual = Nr;
+    int actual = Nr;
     addRoundKey(output, actual);
     actual = Nr - 1;
     while (actual > 0) {
       invShiftRows(output);
       invSubBytes(output);
       addRoundKey(output, actual);
-      invMixColumnas(output);
+      invMixColumns(output);
       actual--;
     }
     invShiftRows(output);
     invSubBytes(output);
     addRoundKey(output, actual);
-    return output;
   }
 
-  // Main cipher/decipher helper-methods (for 128-bit plain/cipher text in,
-  // and 128-bit cipher/plain text out) produced by the encryption algorithm.
   Uint8List encrypt(Uint8List text) {
-    assert(text.length == 16, 'Only 16-byte blocks can be encrypted');
+    assert(text.length == 16, "Only 16-byte blocks can be encrypted");
     Uint8List out = Uint8List(text.length);
     for (int i = 0; i < Nb; i++) {
-      for (int j = 0; j < 4; j++) {
+      // columns
+      for (int j = 0; j <= 3; j++) {
+        // rows
         state[0][j][i] = (text[i * Nb + j] & 0xff);
       }
     }
+    print("encrypted data ---: $text");
+    print("encrypted dataxzx ---: ${state[0]}");
     cipher(state[0], state[1]);
     for (int i = 0; i < Nb; i++) {
-      for (int j = 0; j < 4; j++) {
+      for (int j = 0; j <= 3; j++) {
         out[i * Nb + j] = (state[1][j][i] & 0xff);
       }
     }
@@ -140,28 +129,127 @@ class AES {
   }
 
   Uint8List decrypt(Uint8List text) {
-    assert(text.length == 16, 'Only 16-byte blocks can be encrypted');
+    assert(text.length == 16, "Only 16-byte blocks can be encrypted");
     Uint8List out = Uint8List(text.length);
     for (int i = 0; i < Nb; i++) {
-      for (int j = 0; j < 4; j++) {
+      // columns
+      for (int j = 0; j <= 3; j++) {
+        // rows
         state[0][j][i] = (text[i * Nb + j] & 0xff);
       }
     }
     decipher(state[0], state[1]);
     for (int i = 0; i < Nb; i++) {
-      for (int j = 0; j < 4; j++) {
+      for (int j = 0; j <= 3; j++) {
         out[i * Nb + j] = (state[1][j][i] & 0xff);
       }
     }
     return out;
   }
 
-  // Algorithm's general methods
-  List<Int32List> invMixColumnas(List<Int32List> state) {
-    int temp0;
-    int temp1;
-    int temp2;
-    int temp3;
+  void expandKey() {
+    List<int> w = List<int>.filled(Nb * (Nr + 1) * 4, 0);
+    int temp;
+
+    int i = 0;
+    while (i < Nk) {
+      w[i] = 0x00000000;
+      w[i] |= key[4 * i] << 24;
+      w[i] |= key[4 * i + 1] << 16;
+      w[i] |= key[4 * i + 2] << 8;
+      w[i] |= key[4 * i + 3];
+      i++;
+    }
+
+    i = Nk;
+    while (i < Nb * (Nr + 1)) {
+      temp = w[i - 1];
+      if (i % Nk == 0) {
+        // apply an XOR with a constant round rCon.
+        temp = subWord(rotWord(temp)) ^ (rCon[i ~/ Nk] << 24);
+      } else if (Nk > 6 && i % Nk == 4) {
+        temp = subWord(temp);
+      }
+
+      w[i] = w[i - Nk] ^ temp;
+      i++;
+    }
+
+    this.w = w;
+  }
+
+  int subWord(int word) {
+    return ((sBox[(word >> 24) & 0xFF] << 24) & 0xFFFFFFFF) |
+        ((sBox[(word >> 16) & 0xFF] << 16) & 0xFFFFFFFF) |
+        ((sBox[(word >> 8) & 0xFF] << 8) & 0xFFFFFFFF) |
+        (sBox[word & 0xFF] & 0xFFFFFFFF);
+  }
+
+  int rotWord(int word) {
+    return ((word << 8) & 0xFFFFFFFF) | ((word >> 24) & 0xFFFFFFFF);
+  }
+
+  void subBytes(List<List<int>> s) {
+    for (int i = 0; i < Nb; i++) {
+      for (int j = 0; j < 4; j++) {
+        s[j][i] = sBox[s[j][i]];
+      }
+    }
+  }
+
+  void shiftRows(List<List<int>> s) {
+    int temp;
+    for (int i = 1; i < 4; i++) {
+      for (int j = 0; j < Nb; j++) {
+        for (int k = 0; k < i; k++) {
+          temp = s[i][j];
+          s[i][j] = s[i][(j + 1) % Nb];
+          s[i][(j + 1) % Nb] = temp;
+        }
+      }
+    }
+  }
+
+  void mixColumns(List<List<int>> s) {
+    int s0, s1, s2, s3;
+    for (int i = 0; i < Nb; i++) {
+      s0 = s[0][i];
+      s1 = s[1][i];
+      s2 = s[2][i];
+      s3 = s[3][i];
+
+      s[0][i] = mult(s0, 2) ^ mult(s1, 3) ^ mult(s2, 1) ^ mult(s3, 1);
+      s[1][i] = mult(s0, 1) ^ mult(s1, 2) ^ mult(s2, 3) ^ mult(s3, 1);
+      s[2][i] = mult(s0, 1) ^ mult(s1, 1) ^ mult(s2, 2) ^ mult(s3, 3);
+      s[3][i] = mult(s0, 3) ^ mult(s1, 1) ^ mult(s2, 1) ^ mult(s3, 2);
+    }
+  }
+
+  List<List<int>> invSubBytes(List<List<int>> state) {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < Nb; j++) {
+        state[i][j] = invSubWord(state[i][j]) & 0xFF;
+      }
+    }
+    return state;
+  }
+
+  void invShiftRows(List<List<int>> s) {
+    int temp;
+    for (int i = 1; i < 4; i++) {
+      for (int j = 0; j < Nb; j++) {
+        for (int k = 0; k < i; k++) {
+          temp = s[i][j];
+          s[i][j] = s[i][(j - 1 + Nb) % Nb];
+          s[i][(j - 1 + Nb) % Nb] = temp;
+        }
+      }
+    }
+  }
+
+  List<List<int>> invMixColumns(List<List<int>> state) {
+    int temp0, temp1, temp2, temp3;
+
     for (int c = 0; c < Nb; c++) {
       temp0 = mult(0x0e, state[0][c]) ^
           mult(0x0b, state[1][c]) ^
@@ -179,235 +267,41 @@ class AES {
           mult(0x0d, state[1][c]) ^
           mult(0x09, state[2][c]) ^
           mult(0x0e, state[3][c]);
+
       state[0][c] = temp0;
       state[1][c] = temp1;
       state[2][c] = temp2;
       state[3][c] = temp3;
     }
+
     return state;
   }
 
-  List<Int32List> invShiftRows(List<Int32List> state) {
-    int temp1;
-    int temp2;
-    int temp3;
-    int i;
-    // row 1;
-    temp1 = state[1][Nb - 1];
-    i = Nb - 1;
-    while (i > 0) {
-      state[1][i] = state[1][(i - 1) % Nb];
-      i--;
-    }
-    state[1][0] = temp1;
-    // row 2
-    temp1 = state[2][Nb - 1];
-    temp2 = state[2][Nb - 2];
-    i = Nb - 1;
-    while (i > 1) {
-      state[2][i] = state[2][(i - 2) % Nb];
-      i--;
-    }
-    state[2][1] = temp1;
-    state[2][0] = temp2;
-    // row 3
-    temp1 = state[3][Nb - 3];
-    temp2 = state[3][Nb - 2];
-    temp3 = state[3][Nb - 1];
-    i = Nb - 1;
-    while (i > 2) {
-      state[3][i] = state[3][(i - 3) % Nb];
-      i--;
-    }
-    state[3][0] = temp1;
-    state[3][1] = temp2;
-    state[3][2] = temp3;
-    return state;
-  }
-
-  List<Int32List> invSubBytes(List<Int32List> state) {
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < Nb; j++) {
-        state[i][j] = invSubWord(state[i][j]) & 0xFF;
+  int mult(int a, int b) {
+    int result = 0;
+    while (b > 0) {
+      if (b & 1 == 1) {
+        result ^= a;
       }
+      b >>= 1;
+      a = (a << 1) ^ ((a & 0x80) == 0x80 ? 0x1b : 0);
     }
-    return state;
+    return result & 0xFF;
   }
 
-  Int32List expandKey() {
-    int temp;
-    int i = 0;
-    while (i < Nk) {
-      w[i] = 0x00000000;
-   
-      w[i] = w[i] | (key[4 * i] << 24);
-      w[i] = w[i] | (key[4 * i + 1] << 16);
-      w[i] = w[i] | (key[4 * i + 2] << 8);
-      w[i] = w[i] | key[4 * i + 3];
-      i++;
-    }
-    i = Nk;
-    while (i < Nb * (Nr + 1)) {
-      temp = w[i - 1];
-      if (i % Nk == 0) {
-        // apply an XOR with a constant round rCon.
-        temp = subWord(rotWord(temp)) ^ (rCon[i ~/ Nk] << 24);
-      } else if (Nk > 6 && i % Nk == 4) {
-        temp = subWord(temp);
-      } else {}
-      w[i] = w[i - Nk] ^ temp;
-      i++;
-    }
-    return w;
+  Uint8List padding(Uint8List text) {
+    int paddingSize = 16 - (text.length % 16);
+    Uint8List paddedText = Uint8List(text.length + paddingSize);
+    paddedText.setAll(0, text);
+    paddedText.fillRange(text.length, paddedText.length, paddingSize);
+    return paddedText;
   }
 
-  List<Int32List> mixColumns(List<Int32List> state) {
-    int temp0;
-    int temp1;
-    int temp2;
-    int temp3;
-    for (int c = 0; c < Nb; c++) {
-      temp0 = mult(0x02, state[0][c]) ^
-          mult(0x03, state[1][c]) ^
-          state[2][c] ^
-          state[3][c];
-      temp1 = state[0][c] ^
-          mult(0x02, state[1][c]) ^
-          mult(0x03, state[2][c]) ^
-          state[3][c];
-      temp2 = state[0][c] ^
-          state[1][c] ^
-          mult(0x02, state[2][c]) ^
-          mult(0x03, state[3][c]);
-      temp3 = mult(0x03, state[0][c]) ^
-          state[1][c] ^
-          state[2][c] ^
-          mult(0x02, state[3][c]);
-      state[0][c] = temp0;
-      state[1][c] = temp1;
-      state[2][c] = temp2;
-      state[3][c] = temp3;
-    }
-    return state;
+  Uint8List unpadding(Uint8List text) {
+    int paddingSize = text[text.length - 1];
+    return Uint8List.sublistView(text, 0, text.length - paddingSize);
   }
 
-  List<Int32List> shiftRows(List<Int32List> state) {
-    // row 1
-    int temp1 = state[1][0];
-    int i = 0;
-    while (i < Nb - 1) {
-      state[1][i] = state[1][(i + 1) % Nb];
-      i++;
-    }
-    state[1][Nb - 1] = temp1;
-    // row 2, moves 1-byte
-    temp1 = state[2][0];
-    int temp2 = state[2][1];
-    i = 0;
-    while (i < Nb - 2) {
-      state[2][i] = state[2][(i + 2) % Nb];
-      i++;
-    }
-    state[2][Nb - 2] = temp1;
-    state[2][Nb - 1] = temp2;
-    // row 3, moves 2-bytes
-    temp1 = state[3][0];
-    temp2 = state[3][1];
-    int temp3 = state[3][2];
-    i = 0;
-    while (i < Nb - 3) {
-      state[3][i] = state[3][(i + 3) % Nb];
-      i++;
-    }
-    state[3][Nb - 3] = temp1;
-    state[3][Nb - 2] = temp2;
-    state[3][Nb - 1] = temp3;
-    return state;
-  }
-
-  List<Int32List> subBytes(List<Int32List> state) {
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < Nb; j++) {
-        state[i][j] = subWord(state[i][j]) & 0xFF;
-      }
-    }
-    return state;
-  }
-
-  // Public methods
-  Uint8List ECB_encrypt(Uint8List text) {
-    Uint8List out = Uint8List(0);
-    int i = 0;
-    while (i < text.length) {
-      try {
-        out.addAll(encrypt(text.sublist(i, i + 16)));
-      } catch (e) {
-        print(e);
-      }
-      i += 16;
-    }
-    return out;
-  }
-
-  Uint8List ECB_decrypt(Uint8List text) {
-    Uint8List out = Uint8List(0);
-    int i = 0;
-    while (i < text.length) {
-      try {
-        out.addAll(decrypt(text.sublist(i, i + 16)));
-      } catch (e) {
-        print(e);
-      }
-      i += 16;
-    }
-    return out;
-  }
-
-  Uint8List CBC_encrypt(Uint8List text) {
-    Uint8List? previousBlock;
-    Uint8List out = Uint8List(0);
-    int i = 0;
-    while (i < text.length) {
-      Uint8List part = text.sublist(i, i + 16);
-      try {
-        if (previousBlock == null) previousBlock = iv;
-    
-        part = Uint8List.fromList(xor(previousBlock!.toList(), part));
-        previousBlock = encrypt(part);
-        out.addAll(previousBlock);
-      } catch (e) {
-        print(e);
-      }
-      i += 16;
-    }
-    return out;
-  }
-
-  Uint8List CBC_decrypt(Uint8List text) {
-    Uint8List? previousBlock;
-    Uint8List out = Uint8List(0);
-    int i = 0;
-    while (i < text.length) {
-      Uint8List part = text.sublist(i, i + 16);
-      Uint8List tmp = decrypt(part);
-      try {
-        if (previousBlock == null) previousBlock = iv;
-     
-        tmp = Uint8List.fromList(xor(previousBlock!.toList(), tmp));
-
-        previousBlock = part;
-        out.addAll(tmp);
-      } catch (e) {
-        print(e);
-      }
-      i += 16;
-    }
-    return out;
-  }
-
-  // number of chars (32 bit)
-  static const int Nb = 4;
-  // necessary matrix for AES (sBox + inverted one & rCon)
   static const List<int> sBox = [
     // 0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b,
@@ -523,43 +417,52 @@ class AES {
     return subWord;
   }
 
-  int mult(int a, int b) {
-    int sum = 0;
-    while (a != 0) {
-      if ((a & 1) != 0) {
-        sum = sum ^ b;
+  Uint8List ecbEncrypt(List<int> text) {
+    final out = BytesBuilder();
+    int i = 0;
+    print("encrypted data ---en: ${text}");
+    while (i < text.length) {
+      try {
+        print(
+            "encrypted data --en: ${text.sublist(i, i + 16 < text.length ? i + 16 : text.length)}");
+
+        Uint8List block = Uint8List.fromList(padRight(
+            text.sublist(i, i + 16 < text.length ? i + 16 : text.length), 16));
+        print("encrypted data --en2: ${block}");
+        out.add(encrypt(block));
+        print("encrypted data --en3: ${out.toBytes()}");
+      } catch (e) {
+        debugPrint(e.toString());
       }
-      b = xtime(b);
-      a = a >> 1;
+      i += 16;
     }
-    return sum;
+
+    return out.takeBytes();
   }
 
-  int rotWord(int word) {
-    return (word << 8) | (word & -0x1000000) >> 24;
-  }
-
-  int subWord(int word) {
-    int subWord = 0;
-    int i = 24;
-    while (i >= 0) {
-      int input = word << i >> 24;
-      subWord = subWord | (sBox[input] << (24 - i));
-      i -= 8;
+  List<int> padRight(List<int> input, int length) {
+    if (input.length >= length) {
+      return input;
     }
-    return subWord;
+
+    Uint8List padded = Uint8List(length);
+    padded.setRange(0, input.length, input);
+    return padded;
   }
 
-  int xtime(int b) {
-    return (b & 0x80 == 0) ? b << 1 : b << 1 ^ 0x11b;
-  }
-
-  List<int> xor(List<int> a, List<int> b) {
-    List<int> result = List<int>.filled(a.length, 0);
-    for (int j = 0; j < result.length; j++) {
-      int xor = (a[j] ^ b[j]).toInt();
-      result[j] = (0xff & xor);
+  Uint8List ecbDecrypt(Uint8List text) {
+    final out = BytesBuilder();
+    int i = 0;
+    while (i < text.length) {
+      try {
+        debugPrint("encrypted data --de: ${text.sublist(i, i + 16)}");
+        debugPrint("decrypted data: ${decrypt(text.sublist(i, i + 16))}");
+        out.add(decrypt(text.sublist(i, i + 16)));
+      } catch (e) {
+        debugPrint(e.toString());
+      }
+      i += 16;
     }
-    return result;
+    return out.takeBytes();
   }
 }
