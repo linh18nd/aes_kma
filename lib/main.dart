@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:aes_kma/algorithm/crypt.dart';
+import 'package:aes_kma/utils/app_convert.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -117,9 +118,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void encrypt() {
-    final data = stringToListInt(inputController1.text);
+    final data = AppConvert.stringToListInt(inputController1.text);
+    print("Data: $data");
     final dt = crypt.aesEncrypt(Uint8List.fromList(data));
-    print(dt);
+    print("Encrypted data: $dt");
     final encryptedString = base64.encode(dt);
     setState(() {
       encryptedData = encryptedString;
@@ -127,34 +129,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void decrypt() {
-    print(encryptedData.codeUnits);
+    print("Encrypted data_ de: $encryptedData");
+
     final data = base64.decode(encryptedData);
     final dt = crypt.aesDecrypt(data);
     setState(() {
-      decryptedData = utf8.decode(removeNullBytes(dt));
+      print("Decrypted data: $dt");
+      decryptedData = utf8.decode(AppConvert.removeNullBytes(dt));
     });
   }
 
-  List<int> stringToListInt(String inputString) {
-    List<int> stringBytes = utf8
-        .encode(inputString); // Chuyển đổi chuỗi thành một danh sách các byte
-    int length = stringBytes.length;
-    int remainder = length %
-        16; // Số lượng byte cần bổ sung để đạt được độ dài là bội của 16
-    int paddingLength = remainder == 0
-        ? 0
-        : 16 -
-            remainder; // Số lượng byte cần bổ sung để đạt được độ dài là bội của 16
-
-    List<int> paddedBytes =
-        List<int>.from(stringBytes); // Sao chép các byte từ chuỗi ban đầu
-    paddedBytes.addAll(
-        List.filled(paddingLength, 0)); // Bổ sung các byte null vào cuối chuỗi
-
-    return paddedBytes;
-  }
-
-  List<int> removeNullBytes(List<int> bytes) {
-    return bytes.where((byte) => byte != 0).toList();
-  }
+  
 }
