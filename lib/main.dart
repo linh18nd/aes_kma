@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:aes_kma/src/crypt.dart';
+import 'package:aes_kma/algorithm/crypt.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -34,16 +34,24 @@ class _MyHomePageState extends State<MyHomePage> {
   String encryptedData = '';
   String decryptedData = '';
   Duration duration = Duration();
-  final crypt = AesCrypt('my cool password');
+  final crypt = AesCrypt();
 
   @override
   void initState() {
-    generatedKey = generateRandomKey(128);
-    Uint8List key = Uint8List.fromList(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    final kt = generateRandomKey(16);
+    Uint8List key = Uint8List.fromList(kt);
     crypt.aesSetKeys(key, key);
     crypt.aesSetMode(AesMode.cbc);
     super.initState();
+  }
+
+  List<int> generateRandomKey(int length) {
+    Random random = Random();
+    List<int> randomList = List.generate(
+        length,
+        (index) =>
+            random.nextInt(100)); // Đổi 100 thành giá trị tối đa bạn mong muốn
+    return randomList;
   }
 
   @override
@@ -65,6 +73,18 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               generatedKey.toString(),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                final kt = generateRandomKey(16);
+                setState(() {
+                  generatedKey = base64.encode(Uint8List.fromList(kt));
+                  crypt.aesSetKeys(Uint8List.fromList(kt),
+                      Uint8List.fromList(kt));
+                });
+              },
+              child: const Text('Generate Key'),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -113,16 +133,6 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       decryptedData = utf8.decode(removeNullBytes(dt));
     });
-  }
-
-  String generateRandomKey(int sizeInBits) {
-    int numBytes = (sizeInBits / 8).ceil(); // Số lượng byte cần cho độ dài khóa
-
-    Random random = Random();
-    List<int> bytes =
-        List<int>.generate(numBytes, (index) => random.nextInt(256));
-
-    return base64.encode(Uint8List.fromList(bytes));
   }
 
   List<int> stringToListInt(String inputString) {
