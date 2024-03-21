@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:aes_kma/algorithm/crypt.dart';
 import 'package:aes_kma/utils/app_convert.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -35,7 +36,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String encryptedData = '';
   String decryptedData = '';
   Duration duration = Duration();
-  final crypt = AesCrypt();
+  final crypt = AesCrypt("aes-256-cbc");
 
   @override
   void initState() {
@@ -81,8 +82,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 final kt = generateRandomKey(16);
                 setState(() {
                   generatedKey = base64.encode(Uint8List.fromList(kt));
-                  crypt.aesSetKeys(Uint8List.fromList(kt),
-                      Uint8List.fromList(kt));
+                  crypt.aesSetKeys(
+                      Uint8List.fromList(kt), Uint8List.fromList(kt));
                 });
               },
               child: const Text('Generate Key'),
@@ -117,15 +118,21 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void encrypt() {
-    final data = AppConvert.stringToListInt(inputController1.text);
-    print("Data: $data");
-    final dt = crypt.aesEncrypt(Uint8List.fromList(data));
-    print("Encrypted data: $dt");
-    final encryptedString = base64.encode(dt);
-    setState(() {
-      encryptedData = encryptedString;
-    });
+  void encrypt() async {
+    // cap quyền ghi file
+
+    final result = await FilePicker.platform.pickFiles();
+    final filename = result!.files.single.name;
+    final path = crypt.encryptFileSync(result.files.single.path!);
+    // String? outputFile = await FilePicker.platform.saveFile(
+    //   fileName: '$filename.aes',
+    // );
+
+    
+
+    // if (outputFile == null) {
+    //   // User canceled the picker
+    // }
   }
 
   void decrypt() {
@@ -138,6 +145,4 @@ class _MyHomePageState extends State<MyHomePage> {
       decryptedData = utf8.decode(AppConvert.removeNullBytes(dt));
     });
   }
-
-  
 }

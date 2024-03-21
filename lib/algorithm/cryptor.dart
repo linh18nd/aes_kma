@@ -340,7 +340,7 @@ class _Cryptor {
     File outFile = File(destFilePath);
     RandomAccessFile raf;
     try {
-      raf = await outFile.open(mode: FileMode.writeOnly);
+      raf = await outFile.open(mode: FileMode.write);
     } on FileSystemException catch (e) {
       throw AesCryptFsException(
           'Failed to open file $destFilePath for writing.', e.path, e.osError);
