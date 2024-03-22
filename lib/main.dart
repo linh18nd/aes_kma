@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:aes_kma/algorithm/crypt.dart';
 import 'package:aes_kma/utils/app_convert.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,7 +38,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String encryptedData = '';
   String decryptedData = '';
   Duration duration = Duration();
-  final crypt = AesCrypt("aes-256-cbc");
+  final crypt = AesCrypt();
 
   @override
   void initState() {
@@ -82,6 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 final kt = generateRandomKey(16);
                 setState(() {
                   generatedKey = base64.encode(Uint8List.fromList(kt));
+                  crypt.setPassword(generatedKey);
                   crypt.aesSetKeys(
                       Uint8List.fromList(kt), Uint8List.fromList(kt));
                 });
@@ -120,19 +123,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void encrypt() async {
     // cap quyền ghi file
-
+    // final newPath = await getDownloadsDirectory();
+    // final enPath = newPath!.path + '/encrypted.txt';
+    // final file = await File(enPath).create();
+    // final sink = file.openWrite();
+    // sink.write("Hello world");
+    // await sink.flush();
+    // await sink.close();
+    // final data = await file.readAsBytes();
+    
     final result = await FilePicker.platform.pickFiles();
     final filename = result!.files.single.name;
     final path = crypt.encryptFileSync(result.files.single.path!);
-    // String? outputFile = await FilePicker.platform.saveFile(
-    //   fileName: '$filename.aes',
-    // );
-
     
-
-    // if (outputFile == null) {
-    //   // User canceled the picker
-    // }
   }
 
   void decrypt() {
