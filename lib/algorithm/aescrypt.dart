@@ -119,14 +119,14 @@ class AesCrypt {
   /// Encrypts binary data [srcData] to [destFilePath] file synchronously.
   ///
   /// Returns [String] object containing the path to encrypted file.
-  String encryptDataToFileSync(Uint8List srcData, String destFilePath) {
-    destFilePath = destFilePath.trim();
-    AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
-    AesCryptArgumentError.checkNullOrEmpty(
-        destFilePath, 'Empty encrypted file path.');
-    return _Cryptor.init(_passBytes, _owMode, _userdata)
-        .encryptDataToFileSync(srcData, destFilePath);
-  }
+  // String encryptDataToFileSync(Uint8List srcData, String destFilePath) {
+  //   destFilePath = destFilePath.trim();
+  //   AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
+  //   AesCryptArgumentError.checkNullOrEmpty(
+  //       destFilePath, 'Empty encrypted file path.');
+  //   return _Cryptor.init(_passBytes, _owMode, _userdata)
+  //       .encryptDataToFileSync(srcData, destFilePath);
+  // }
 
   /// Encrypts a plain text string [srcString] to [destFilePath] file synchronously.
   ///
@@ -140,27 +140,27 @@ class AesCrypt {
   /// to the beginning of the text string before it is encrypted.
   ///
   /// Returns [String] object containing the path to encrypted file.
-  String encryptTextToFileSync(String srcString, String destFilePath,
-      {bool utf16 = false, Endian endian = Endian.big, bool bom = false}) {
-    Uint8List bytes = utf16
-        ? srcString.toUtf16Bytes(endian, bom)
-        : srcString.toUtf8Bytes(bom) as Uint8List;
-    return encryptDataToFileSync(bytes, destFilePath);
-  }
+  // String encryptTextToFileSync(String srcString, String destFilePath,
+  //     {bool utf16 = false, Endian endian = Endian.big, bool bom = false}) {
+  //   Uint8List bytes = utf16
+  //       ? srcString.toUtf16Bytes(endian, bom)
+  //       : srcString.toUtf8Bytes(bom) as Uint8List;
+  //   return encryptDataToFileSync(bytes, destFilePath);
+  // }
 
   /// Encrypts binary data [srcData] to [destFilePath] file asynchronously.
   ///
   /// Returns [Future<String>] that completes with the path to encrypted file
   /// once the entire operation has completed.
-  Future<String> encryptDataToFile(
-      Uint8List srcData, String destFilePath) async {
-    destFilePath = destFilePath.trim();
-    AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
-    AesCryptArgumentError.checkNullOrEmpty(
-        destFilePath, 'Empty encrypted file path.');
-    return await _Cryptor.init(_passBytes, _owMode, _userdata)
-        .encryptDataToFile(srcData, destFilePath);
-  }
+  // Future<String> encryptDataToFile(
+  //     Uint8List srcData, String destFilePath) async {
+  //   destFilePath = destFilePath.trim();
+  //   AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
+  //   AesCryptArgumentError.checkNullOrEmpty(
+  //       destFilePath, 'Empty encrypted file path.');
+  //   return await _Cryptor.init(_passBytes, _owMode, _userdata)
+  //       .encryptDataToFile(srcData, destFilePath);
+  // }
 
   /// Encrypts a plain text string [srcString] to [destFilePath] file asynchronously.
   ///
@@ -175,15 +175,15 @@ class AesCrypt {
   ///
   /// Returns [Future<String>] that completes with the path to encrypted file
   /// once the entire operation has completed.
-  Future<String> encryptTextToFile(String srcString, String destFilePath,
-      {bool utf16 = false,
-      Endian endian = Endian.big,
-      bool bom = false}) async {
-    Uint8List bytes = utf16
-        ? srcString.toUtf16Bytes(endian, bom)
-        : srcString.toUtf8Bytes(bom) as Uint8List;
-    return await encryptDataToFile(bytes, destFilePath);
-  }
+  // Future<String> encryptTextToFile(String srcString, String destFilePath,
+  //     {bool utf16 = false,
+  //     Endian endian = Endian.big,
+  //     bool bom = false}) async {
+  //   Uint8List bytes = utf16
+  //       ? srcString.toUtf16Bytes(endian, bom)
+  //       : srcString.toUtf8Bytes(bom) as Uint8List;
+  //   return await encryptDataToFile(bytes, destFilePath);
+  // }
 
   /// Encrypts [srcFilePath] file to [destFilePath] file synchronously.
   ///
@@ -193,19 +193,19 @@ class AesCrypt {
   /// If encrypted file exists, the behaviour depends on [AesCryptOwMode].
   ///
   /// Returns [String] object containing the path to encrypted file.
-  String encryptFileSync(String srcFilePath, [String destFilePath = '']) {
-    srcFilePath = srcFilePath.trim();
-    destFilePath = destFilePath.trim();
-    AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
-    AesCryptArgumentError.checkNullOrEmpty(
-        srcFilePath, 'Empty source file path.');
-    if (srcFilePath == destFilePath) {
-      throw AesCryptArgumentError(
-          'Source file path and encrypted file path are the same.');
-    }
-    return _Cryptor.init(_passBytes, _owMode, _userdata)
-        .encryptFileSync(srcFilePath, destFilePath);
-  }
+  // String encryptFileSync(String srcFilePath, [String destFilePath = '']) {
+  //   srcFilePath = srcFilePath.trim();
+  //   destFilePath = destFilePath.trim();
+  //   AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
+  //   AesCryptArgumentError.checkNullOrEmpty(
+  //       srcFilePath, 'Empty source file path.');
+  //   if (srcFilePath == destFilePath) {
+  //     throw AesCryptArgumentError(
+  //         'Source file path and encrypted file path are the same.');
+  //   }
+  //   return _Cryptor.init(_passBytes, _owMode, _userdata)
+  //       .encryptFileSync(srcFilePath, destFilePath);
+  // }
 
   /// Encrypts [srcFilePath] file to [destFilePath] file asynchronously.
   ///
@@ -216,32 +216,32 @@ class AesCrypt {
   ///
   /// Returns [Future<String>] that completes with the path to encrypted file
   /// once the entire operation has completed.
-  Future<String> encryptFile(String srcFilePath,
-      [String destFilePath = '']) async {
-    srcFilePath = srcFilePath.trim();
-    destFilePath = destFilePath.trim();
-    AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
-    AesCryptArgumentError.checkNullOrEmpty(
-        srcFilePath, 'Empty source file path.');
-    if (srcFilePath == destFilePath) {
-      throw AesCryptArgumentError(
-          'Source file path and encrypted file path are the same.');
-    }
-    return await _Cryptor.init(_passBytes, _owMode, _userdata)
-        .encryptFile(srcFilePath, destFilePath);
-  }
+  // Future<String> encryptFile(String srcFilePath,
+  //     [String destFilePath = '']) async {
+  //   srcFilePath = srcFilePath.trim();
+  //   destFilePath = destFilePath.trim();
+  //   AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
+  //   AesCryptArgumentError.checkNullOrEmpty(
+  //       srcFilePath, 'Empty source file path.');
+  //   if (srcFilePath == destFilePath) {
+  //     throw AesCryptArgumentError(
+  //         'Source file path and encrypted file path are the same.');
+  //   }
+  //   return await _Cryptor.init(_passBytes, _owMode, _userdata)
+  //       .encryptFile(srcFilePath, destFilePath);
+  // }
 
   /// Decrypts binary data from [srcFilePath] file synchronously.
   ///
   /// Returns [Uint8List] object containing decrypted data.
-  Uint8List decryptDataFromFileSync(String srcFilePath) {
-    srcFilePath = srcFilePath.trim();
-    AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
-    AesCryptArgumentError.checkNullOrEmpty(
-        srcFilePath, 'Empty source file path.');
-    return _Cryptor.init(_passBytes, _owMode, _userdata)
-        .decryptDataFromFileSync(srcFilePath);
-  }
+  // Uint8List decryptDataFromFileSync(String srcFilePath) {
+  //   srcFilePath = srcFilePath.trim();
+  //   AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
+  //   AesCryptArgumentError.checkNullOrEmpty(
+  //       srcFilePath, 'Empty source file path.');
+  //   return _Cryptor.init(_passBytes, _owMode, _userdata)
+  //       .decryptDataFromFileSync(srcFilePath);
+  // }
 
   /// Decrypts a plain text from [srcFilePath] file synchronously.
   ///
@@ -254,34 +254,34 @@ class AesCrypt {
   /// Otherwise the data will be interpreted as a list of UTF-8 bytes.
   ///
   /// Returns [String] object containing decrypted text.
-  String decryptTextFromFileSync(String srcFilePath,
-      {bool utf16 = false, Endian endian = Endian.big}) {
-    Uint8List decData = decryptDataFromFileSync(srcFilePath);
-    String srcString;
-    if ((decData[0] == 0xFE && decData[1] == 0xFF) ||
-        (decData[0] == 0xFF && decData[1] == 0xFE)) {
-      srcString = decData.toUtf16String();
-    } else if (decData[0] == 0xEF && decData[1] == 0xBB && decData[2] == 0xBF) {
-      srcString = decData.toUtf8String();
-    } else {
-      srcString =
-          utf16 ? decData.toUtf16String(endian) : decData.toUtf8String();
-    }
-    return srcString;
-  }
+  // String decryptTextFromFileSync(String srcFilePath,
+  //     {bool utf16 = false, Endian endian = Endian.big}) {
+  //   Uint8List decData = decryptDataFromFileSync(srcFilePath);
+  //   String srcString;
+  //   if ((decData[0] == 0xFE && decData[1] == 0xFF) ||
+  //       (decData[0] == 0xFF && decData[1] == 0xFE)) {
+  //     srcString = decData.toUtf16String();
+  //   } else if (decData[0] == 0xEF && decData[1] == 0xBB && decData[2] == 0xBF) {
+  //     srcString = decData.toUtf8String();
+  //   } else {
+  //     srcString =
+  //         utf16 ? decData.toUtf16String(endian) : decData.toUtf8String();
+  //   }
+  //   return srcString;
+  // }
 
   /// Decrypts binary data from [srcFilePath] file asynchronously.
   ///
   /// Returns [Future<Uint8List>] that completes with decrypted data
   /// once the entire operation has completed.
-  Future<Uint8List> decryptDataFromFile(String srcFilePath) async {
-    srcFilePath = srcFilePath.trim();
-    AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
-    AesCryptArgumentError.checkNullOrEmpty(
-        srcFilePath, 'Empty source file path.');
-    return await _Cryptor.init(_passBytes, _owMode, _userdata)
-        .decryptDataFromFile(srcFilePath);
-  }
+  // Future<Uint8List> decryptDataFromFile(String srcFilePath) async {
+  //   srcFilePath = srcFilePath.trim();
+  //   AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
+  //   AesCryptArgumentError.checkNullOrEmpty(
+  //       srcFilePath, 'Empty source file path.');
+  //   return await _Cryptor.init(_passBytes, _owMode, _userdata)
+  //       .decryptDataFromFile(srcFilePath);
+  // }
 
   /// Decrypts a plain text from [srcFilePath] file asynchronously.
   ///
@@ -295,21 +295,21 @@ class AesCrypt {
   ///
   /// Returns [Future<String>] that completes with decrypted text
   /// once the entire operation has completed.
-  Future<String> decryptTextFromFile(String srcFilePath,
-      {bool utf16 = false, Endian endian = Endian.big}) async {
-    Uint8List decData = await decryptDataFromFileSync(srcFilePath);
-    String srcString;
-    if ((decData[0] == 0xFE && decData[1] == 0xFF) ||
-        (decData[0] == 0xFF && decData[1] == 0xFE)) {
-      srcString = decData.toUtf16String();
-    } else if (decData[0] == 0xEF && decData[1] == 0xBB && decData[2] == 0xBF) {
-      srcString = decData.toUtf8String();
-    } else {
-      srcString =
-          utf16 ? decData.toUtf16String(endian) : decData.toUtf8String();
-    }
-    return srcString;
-  }
+  // Future<String> decryptTextFromFile(String srcFilePath,
+  //     {bool utf16 = false, Endian endian = Endian.big}) async {
+  //   Uint8List decData = await decryptDataFromFileSync(srcFilePath);
+  //   String srcString;
+  //   if ((decData[0] == 0xFE && decData[1] == 0xFF) ||
+  //       (decData[0] == 0xFF && decData[1] == 0xFE)) {
+  //     srcString = decData.toUtf16String();
+  //   } else if (decData[0] == 0xEF && decData[1] == 0xBB && decData[2] == 0xBF) {
+  //     srcString = decData.toUtf8String();
+  //   } else {
+  //     srcString =
+  //         utf16 ? decData.toUtf16String(endian) : decData.toUtf8String();
+  //   }
+  //   return srcString;
+  // }
 
   /// Decrypts [srcFilePath] file to [destFilePath] file synchronously.
   ///
@@ -321,19 +321,19 @@ class AesCrypt {
   /// If decrypted file exists, the behaviour depends on [AesCryptOwMode].
   ///
   /// Returns [String] object containing the path to decrypted file.
-  String decryptFileSync(String srcFilePath, [String destFilePath = '']) {
-    srcFilePath = srcFilePath.trim();
-    destFilePath = destFilePath.trim();
-    AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
-    AesCryptArgumentError.checkNullOrEmpty(
-        srcFilePath, 'Empty source file path.');
-    if (srcFilePath == destFilePath) {
-      throw AesCryptArgumentError(
-          'Source file path and decrypted file path are the same.');
-    }
-    return _Cryptor.init(_passBytes, _owMode, _userdata)
-        .decryptFileSync(srcFilePath, destFilePath);
-  }
+  // String decryptFileSync(String srcFilePath, [String destFilePath = '']) {
+  //   srcFilePath = srcFilePath.trim();
+  //   destFilePath = destFilePath.trim();
+  //   AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
+  //   AesCryptArgumentError.checkNullOrEmpty(
+  //       srcFilePath, 'Empty source file path.');
+  //   if (srcFilePath == destFilePath) {
+  //     throw AesCryptArgumentError(
+  //         'Source file path and decrypted file path are the same.');
+  //   }
+  //   return _Cryptor.init(_passBytes, _owMode, _userdata)
+  //       .decryptFileSync(srcFilePath, destFilePath);
+  // }
 
   /// Decrypts [srcFilePath] file to [destFilePath] file asynchronously.
   ///
@@ -346,20 +346,20 @@ class AesCrypt {
   ///
   /// Returns [Future<String>] that completes with the path to decrypted file
   /// once the entire operation has completed.
-  Future<String> decryptFile(String srcFilePath,
-      [String destFilePath = '']) async {
-    srcFilePath = srcFilePath.trim();
-    destFilePath = destFilePath.trim();
-    AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
-    AesCryptArgumentError.checkNullOrEmpty(
-        srcFilePath, 'Empty source file path.');
-    if (srcFilePath == destFilePath) {
-      throw AesCryptArgumentError(
-          'Source file path and decrypted file path are the same.');
-    }
-    return await _Cryptor.init(_passBytes, _owMode, _userdata)
-        .decryptFile(srcFilePath, destFilePath);
-  }
+  // Future<String> decryptFile(String srcFilePath,
+  //     [String destFilePath = '']) async {
+  //   srcFilePath = srcFilePath.trim();
+  //   destFilePath = destFilePath.trim();
+  //   AesCryptArgumentError.checkNullOrEmpty(_password, 'Empty password.');
+  //   AesCryptArgumentError.checkNullOrEmpty(
+  //       srcFilePath, 'Empty source file path.');
+  //   if (srcFilePath == destFilePath) {
+  //     throw AesCryptArgumentError(
+  //         'Source file path and decrypted file path are the same.');
+  //   }
+  //   return await _Cryptor.init(_passBytes, _owMode, _userdata)
+  //       .decryptFile(srcFilePath, destFilePath);
+  // }
 
 //****************************************************************************
 //**************************** CRYPTO FUNCTIONS ******************************
@@ -368,23 +368,23 @@ class AesCrypt {
   /// Creates random encryption key of [length] bytes long.
   ///
   /// Returns [Uint8List] object containing created key.
-  Uint8List createKey([int length = 32]) => _Cryptor().createKey(length);
+  // Uint8List createKey([int length = 32]) => _Cryptor().createKey(length);
 
-  /// Creates random initialization vector.
-  ///
-  /// Returns [Uint8List] object containing created initialization vector.
-  Uint8List createIV() => _Cryptor().createKey(16);
+  // /// Creates random initialization vector.
+  // ///
+  // /// Returns [Uint8List] object containing created initialization vector.
+  // Uint8List createIV() => _Cryptor().createKey(16);
 
-  /// Computes SHA256 hash for binary data [data].
-  ///
-  /// Returns [Uint8List] object containing computed hash.
-  Uint8List sha256(Uint8List data) => _Cryptor().sha256(data);
+  // /// Computes SHA256 hash for binary data [data].
+  // ///
+  // /// Returns [Uint8List] object containing computed hash.
+  // Uint8List sha256(Uint8List data) => _Cryptor().sha256(data);
 
-  /// Computes HMAC-SHA256 code for binary data [data] using cryptographic key [key].
-  ///
-  /// Returns [Uint8List] object containing computed code.
-  Uint8List hmacSha256(Uint8List key, Uint8List data) =>
-      _Cryptor().hmacSha256(key, data);
+  // /// Computes HMAC-SHA256 code for binary data [data] using cryptographic key [key].
+  // ///
+  // /// Returns [Uint8List] object containing computed code.
+  // Uint8List hmacSha256(Uint8List key, Uint8List data) =>
+  //     _Cryptor().hmacSha256(key, data);
 
   /// Sets AES encryption key [key] and the initialization vector [iv].
   void aesSetKeys(Uint8List key, [Uint8List? iv]) => _aes.aesSetKeys(key, iv);

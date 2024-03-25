@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:async';
 
 part 'aescrypt.dart';
-part 'cryptor.dart';
+// part 'cryptor.dart';
 part 'aes.dart';
 part 'exceptions.dart';
 part 'extentions.dart';

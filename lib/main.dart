@@ -121,21 +121,15 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void encrypt() async {
-    // cap quyền ghi file
-    // final newPath = await getDownloadsDirectory();
-    // final enPath = newPath!.path + '/encrypted.txt';
-    // final file = await File(enPath).create();
-    // final sink = file.openWrite();
-    // sink.write("Hello world");
-    // await sink.flush();
-    // await sink.close();
-    // final data = await file.readAsBytes();
-    
-    final result = await FilePicker.platform.pickFiles();
-    final filename = result!.files.single.name;
-    final path = crypt.encryptFileSync(result.files.single.path!);
-    
+  void encrypt() {
+    final data = AppConvert.stringToListInt(inputController1.text);
+    print("Data: $data");
+    final dt = crypt.aesEncrypt(Uint8List.fromList(data));
+    print("Encrypted data: $dt");
+    final encryptedString = base64.encode(dt);
+    setState(() {
+      encryptedData = encryptedString;
+    });
   }
 
   void decrypt() {
