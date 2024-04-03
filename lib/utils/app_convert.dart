@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 class AppConvert {
   static List<int> stringToListInt(String inputString) {
@@ -22,5 +23,30 @@ class AppConvert {
 
   static List<int> removeNullBytes(List<int> bytes) {
     return bytes.where((byte) => byte != 0).toList();
+  }
+
+  static String listIntToString(List<int> bytes) {
+    return utf8.decode(bytes);
+  }
+
+  static Uint8List padDataForAES(Uint8List data) {
+    final blockSize = 16;
+    final paddingLength = blockSize - (data.length % blockSize);
+    final paddedData = Uint8List(data.length + paddingLength);
+
+    // Copy dữ liệu gốc vào mảng đã nở ra
+    paddedData.setRange(0, data.length, data);
+
+    // Thêm các byte padding với giá trị bằng paddingLength
+    for (int i = data.length; i < paddedData.length; i++) {
+      paddedData[i] = paddingLength;
+    }
+
+    return paddedData;
+  }
+
+  static Uint8List unpadDataForAES(Uint8List data) {
+    final paddingLength = data[data.length - 1];
+    return data.sublist(0, data.length - paddingLength);
   }
 }

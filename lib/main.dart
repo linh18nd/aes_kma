@@ -84,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 final kt = generateRandomKey(16);
                 setState(() {
                   generatedKey = base64.encode(Uint8List.fromList(kt));
-                  crypt.setPassword(generatedKey);
+
                   crypt.aesSetKeys(
                       Uint8List.fromList(kt), Uint8List.fromList(kt));
                 });
@@ -121,25 +121,69 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void encrypt() {
-    final data = AppConvert.stringToListInt(inputController1.text);
-    print("Data: $data");
-    final dt = crypt.aesEncrypt(Uint8List.fromList(data));
-    print("Encrypted data: $dt");
-    final encryptedString = base64.encode(dt);
-    setState(() {
-      encryptedData = encryptedString;
-    });
+  void encrypt() async {
+    final files = await FilePicker.platform.pickFiles();
+    if (files!.files.isEmpty) {
+      return;
+    }
+
+    final dt = crypt.aesEncryptFile(File(files.files.single.path!));
+    print("Encrypted data: ${dt.length}");
+    final dir = await getApplicationDocumentsDirectory();
+    await saveEncryptedFile(dt);
   }
 
-  void decrypt() {
-    print("Encrypted data_ de: $encryptedData");
+  Future<void> saveEncryptedFile(Uint8List encryptedData) async {
+    try {
+      // Lấy thư mục ứng dụng được cấp phát cho lưu trữ dữ liệu tạm thời
+      Directory appDocDir = await getApplicationDocumentsDirectory();
 
-    final data = base64.decode(encryptedData);
-    final dt = crypt.aesDecrypt(data);
-    setState(() {
-      print("Decrypted data: $dt");
-      decryptedData = utf8.decode(AppConvert.removeNullBytes(dt));
-    });
+      // Xác định đường dẫn đến file
+      String filePath = '${appDocDir.path}/encrypted_file.bin';
+
+      // Mở file để ghi dữ liệu
+      File file = File(filePath);
+
+      // Ghi dữ liệu vào file
+      await file.writeAsBytes(encryptedData);
+
+      print('File đã được lưu tại: $filePath');
+    } catch (e) {
+      print('Lỗi khi lưu file: $e');
+    }
+  }
+
+  void decrypt() async {
+    final files = await FilePicker.platform.pickFiles();
+
+    if (files!.files.isEmpty) {
+      return;
+    }
+
+    final decrypted = crypt.aesDecryptFile(File(files.files.single.path!));
+    print("Decrypted data: ${decrypted.length}");
+
+    await saveDecryptedFile(decrypted);
+  }
+
+  Future<void> saveDecryptedFile(Uint8List decryptedData) async {
+    try {
+      // Lấy thư mục ứng dụng được cấp phát cho lưu trữ dữ liệu tạm thời
+      Directory appDocDir = await getApplicationDocumentsDirectory();
+
+      // Xác định đường dẫn  đến file
+      final time = DateTime.now().millisecondsSinceEpoch;
+      String filePath = '${appDocDir.path}/decrypted_file_$time.png';
+
+      // Mở file để ghi dữ liệu
+      File file = File(filePath);
+
+      // Ghi dữ liệu vào file
+      await file.writeAsBytes(decryptedData);
+
+      print('File đã được lưu tại: $filePath');
+    } catch (e) {
+      print('Lỗi khi lưu file: $e');
+    }
   }
 }
