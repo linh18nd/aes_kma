@@ -1,4 +1,6 @@
-part of aes_crypt;
+import 'dart:typed_data';
+import 'package:aes_kma/algorithm/aescrypt.dart';
+import 'package:aes_kma/algorithm/exceptions.dart';
 
 // This is the ported version of PHP phpAES library
 // http://www.phpaes.com
@@ -10,7 +12,7 @@ part of aes_crypt;
 // on 1 Mb data (1,4 vs 55-65 seconds), about 80 times faster on 2 Mb data
 // (2,7 vs 200-240 seconds), and so on.
 
-class _Aes {
+class Aes {
   // The S-Box substitution table.
   static final Uint8List _sBox = Uint8List.fromList([
     0x63,
@@ -532,10 +534,13 @@ class _Aes {
   ]);
 
   // The number of 32-bit words comprising the plaintext and columns comprising the state matrix of an AES cipher.
+  // ignore: constant_identifier_names
   static const int _Nb = 4;
   // The number of 32-bit words comprising the cipher key in this AES cipher.
+  // ignore: non_constant_identifier_names
   late int _Nk;
   // The number of rounds in this AES cipher.
+  // ignore: non_constant_identifier_names
   int? _Nr;
   // The key schedule in this AES cipher.
   late Uint32List _w; // _Nb*(_Nr+1) 32-bit words
@@ -567,7 +572,7 @@ class _Aes {
     if (![16, 24, 32].contains(key.length)) {
       throw AesCryptArgumentError(
           'Invalid key length for AES. Provided ${key.length * 8} bits, expected 128, 192 or 256 bits.');
-    } else if (_aesMode != AesMode.ecb && iv.isNullOrEmpty) {
+    } else if (_aesMode != AesMode.ecb && iv.isEmpty) {
       throw AesCryptArgumentError(
           'The initialization vector is not specified. It can not be empty when AES mode is not ECB.');
     } else if (iv.length != 16) {
@@ -576,7 +581,7 @@ class _Aes {
     }
 
     _aesKey = Uint8List.fromList(key);
-    _aesIV = iv.isNullOrEmpty ? Uint8List(0) : Uint8List.fromList(iv);
+    _aesIV = iv.isEmpty ? Uint8List(0) : Uint8List.fromList(iv);
 
     _Nk = key.length ~/ 4;
     _Nr = _Nk + _Nb + 2;
@@ -585,15 +590,8 @@ class _Aes {
     _aesKeyExpansion(_aesKey); // places expanded key in w
   }
 
-  // Sets AES mode of operation as [mode].
-  //
-  // Available modes:
-  // - [AesMode.ecb] - ECB (Electronic Code Book)
-  // - [AesMode.cbc] - CBC (Cipher Block Chaining)
-  // - [AesMode.cfb] - CFB (Cipher Feedback)
-  // - [AesMode.ofb] - OFB (Output Feedback)
   void aesSetMode(AesMode mode) {
-    if (_aesMode == AesMode.ecb && _aesMode != mode && _aesIV.isNullOrEmpty) {
+    if (_aesMode == AesMode.ecb && _aesMode != mode && _aesIV.isEmpty) {
       throw AesCryptArgumentError(
           'Failed to change AES mode. The initialization vector is not set. When changing the mode from ECB to another one, set IV at first.');
     }

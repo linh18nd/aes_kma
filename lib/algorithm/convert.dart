@@ -30,7 +30,7 @@ class AppConvert {
   }
 
   static Uint8List padDataForAES(Uint8List data) {
-    final blockSize = 16;
+    const blockSize = 16;
     final paddingLength = blockSize - (data.length % blockSize);
     final paddedData = Uint8List(data.length + paddingLength);
 

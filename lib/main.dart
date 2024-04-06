@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:aes_kma/algorithm/crypt.dart';
-import 'package:aes_kma/utils/app_convert.dart';
+import 'package:aes_kma/algorithm/aescrypt.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -126,31 +125,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (files!.files.isEmpty) {
       return;
     }
+    final file = File(files.files.single.path!);
+    final dt = crypt.aesEncryptFile(FileModel(file));
 
-    final dt = crypt.aesEncryptFile(File(files.files.single.path!));
-    print("Encrypted data: ${dt.length}");
-    final dir = await getApplicationDocumentsDirectory();
-    await saveEncryptedFile(dt);
-  }
-
-  Future<void> saveEncryptedFile(Uint8List encryptedData) async {
-    try {
-      // Lấy thư mục ứng dụng được cấp phát cho lưu trữ dữ liệu tạm thời
-      Directory appDocDir = await getApplicationDocumentsDirectory();
-
-      // Xác định đường dẫn đến file
-      String filePath = '${appDocDir.path}/encrypted_file.bin';
-
-      // Mở file để ghi dữ liệu
-      File file = File(filePath);
-
-      // Ghi dữ liệu vào file
-      await file.writeAsBytes(encryptedData);
-
-      print('File đã được lưu tại: $filePath');
-    } catch (e) {
-      print('Lỗi khi lưu file: $e');
-    }
+    await saveFile(dt);
   }
 
   void decrypt() async {
@@ -159,31 +137,19 @@ class _MyHomePageState extends State<MyHomePage> {
     if (files!.files.isEmpty) {
       return;
     }
+    final file = File(files.files.single.path!);
 
-    final decrypted = crypt.aesDecryptFile(File(files.files.single.path!));
+    final decrypteFile = crypt.aesDecryptFile(FileModel(file));
+    final decrypted = decrypteFile.bytes;
     print("Decrypted data: ${decrypted.length}");
 
-    await saveDecryptedFile(decrypted);
+    await saveFile(decrypteFile);
   }
 
-  Future<void> saveDecryptedFile(Uint8List decryptedData) async {
-    try {
-      // Lấy thư mục ứng dụng được cấp phát cho lưu trữ dữ liệu tạm thời
-      Directory appDocDir = await getApplicationDocumentsDirectory();
-
-      // Xác định đường dẫn  đến file
-      final time = DateTime.now().millisecondsSinceEpoch;
-      String filePath = '${appDocDir.path}/decrypted_file_$time.png';
-
-      // Mở file để ghi dữ liệu
-      File file = File(filePath);
-
-      // Ghi dữ liệu vào file
-      await file.writeAsBytes(decryptedData);
-
-      print('File đã được lưu tại: $filePath');
-    } catch (e) {
-      print('Lỗi khi lưu file: $e');
-    }
+  Future<void> saveFile(FileModel fileModel) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final path = '${dir.path}/${fileModel.name}';
+    final file = File(path);
+    await file.writeAsBytes(fileModel.bytes);
   }
 }

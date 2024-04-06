@@ -1,22 +1,8 @@
-part of aes_crypt;
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:aes_kma/algorithm/aes.dart';
+import 'package:aes_kma/algorithm/convert.dart';
 
-/// Enum that specifies the overwrite mode for write file operations
-/// during encryption or decryption process.
-enum AesCryptOwMode {
-  /// If the file exists, stops the operation and throws [AesCryptException]
-  /// exception with [AesCryptExceptionType.destFileExists] type.
-  /// This mode is set by default.
-  warn,
-
-  /// If the file exists, adds index '(1)' to its' name and tries to save.
-  /// If such file also exists, adds '(2)' to its name, then '(3)', etc.
-  rename,
-
-  /// Overwrites the file if it exists.
-  on,
-}
-
-/// Enum that specifies the mode of operation of the AES algorithm.
 enum AesMode {
   /// ECB (Electronic Code Book)
   ecb,
@@ -31,9 +17,8 @@ enum AesMode {
   ofb,
 }
 
-/// Wraps encryption and decryption methods and algorithms.
 class AesCrypt {
-  final _aes = _Aes();
+  final _aes = Aes();
 
   AesCrypt();
 
@@ -50,13 +35,34 @@ class AesCrypt {
 
   Uint8List aesDecrypt(Uint8List data) => _aes.aesDecrypt(data);
 
-  Uint8List aesEncryptFile(File file) {
-    final data = AppConvert.padDataForAES(file.readAsBytesSync());
-    return aesEncrypt(data);
+  FileModel aesEncryptFile(FileModel file) {
+    final data = AppConvert.padDataForAES(file.bytes);
+    final encryptedData = aesEncrypt(data);
+    return file.copyWith(bytes: encryptedData, name: '${file.name}.aes');
   }
 
-  Uint8List aesDecryptFile(File file) {
-    final data = aesDecrypt(file.readAsBytesSync());
-    return AppConvert.unpadDataForAES(data);
+  FileModel aesDecryptFile(FileModel file) {
+    final data = aesDecrypt(file.bytes);
+    final decryptedData = AppConvert.unpadDataForAES(data);
+    final name = file.name.substring(0, file.name.length - 4);
+    return file.copyWith(bytes: decryptedData, name: name);
+  }
+}
+
+class FileModel {
+  final String name;
+  final Uint8List bytes;
+
+  FileModel.asset(this.name, this.bytes);
+// \
+  FileModel(File file)
+      : name = file.path.split('\\').last,
+        bytes = file.readAsBytesSync();
+
+  FileModel copyWith({String? name, Uint8List? bytes}) {
+    return FileModel.asset(
+      name ?? this.name,
+      bytes ?? this.bytes,
+    );
   }
 }
