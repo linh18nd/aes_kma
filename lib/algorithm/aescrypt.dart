@@ -52,6 +52,7 @@ class AesCrypt {
 class FileModel {
   final String name;
   final Uint8List bytes;
+  AesMode mode = AesMode.ecb;
 
   FileModel.asset(this.name, this.bytes);
 // \
@@ -64,5 +65,9 @@ class FileModel {
       name ?? this.name,
       bytes ?? this.bytes,
     );
+  }
+
+  void setMode(AesMode mode) {
+    this.mode = mode;
   }
 }

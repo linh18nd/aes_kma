@@ -1,118 +1,257 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
-import 'dart:typed_data';
+
 import 'package:aes_kma/algorithm/aescrypt.dart';
+import 'package:aes_kma/model/user.dart';
+import 'package:aes_kma/utils/key.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/services.dart';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AES Key Generator',
-      home: const MyHomePage(),
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'WebSocket Client',
+      home: MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+  const MyHomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  MyHomePageState createState() => MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  TextEditingController inputController1 = TextEditingController();
-  TextEditingController inputController2 = TextEditingController();
-  String generatedKey = '';
-  String encryptedData = '';
-  String decryptedData = '';
-  Duration duration = Duration();
-  final crypt = AesCrypt();
+class MyHomePageState extends State<MyHomePage> {
+  final ipController = TextEditingController();
+  WebSocketChannel? channel;
+  String ip = "localhost";
+  List<User> users = [];
+  FileModel? file;
+  FileModel? encryptedFile;
+  FileModel? decryptedFile;
+  FileModel? receivedFile;
+  String receiverId = '';
+  String generateKey = '';
+
+  @override
+  void dispose() {
+    channel?.sink.close();
+    super.dispose();
+  }
 
   @override
   void initState() {
-    final kt = generateRandomKey(16);
-    Uint8List key = Uint8List.fromList(kt);
-    crypt.aesSetKeys(key, key);
-    crypt.aesSetMode(AesMode.cbc);
     super.initState();
+    connect();
   }
 
-  List<int> generateRandomKey(int length) {
-    Random random = Random();
-    List<int> randomList = List.generate(
-        length,
-        (index) =>
-            random.nextInt(100)); // Đổi 100 thành giá trị tối đa bạn mong muốn
-    return randomList;
+  void connect() {
+    channel = IOWebSocketChannel.connect('ws://$ip:8080');
+    channel?.stream.listen((message) {
+      handleMessage(message);
+    });
+  }
+
+  void handleMessage(String message) {
+    final Map<String, dynamic> result = jsonDecode(message);
+    final type = result['type'];
+    print(type);
+    switch (type) {
+      case "userInfo":
+        updateAllUser(message);
+        break;
+      case "file":
+        receiveFile(message);
+        break;
+      default:
+    }
+  }
+
+  void updateAllUser(String text) {
+    users.clear();
+    Map<String, dynamic> result = jsonDecode(text);
+
+    final data = result['data'];
+
+    for (var item in data) {
+      users.add(User.fromJson(item));
+    }
+    setState(() {});
+  }
+
+  void receiveFile(String text) {
+    final data = jsonDecode(text);
+    final encryptedData = base64.decode(data['data']);
+    final fileName = data['fileName'];
+
+    setState(() {
+      receivedFile =
+          FileModel.asset(fileName, Uint8List.fromList(encryptedData));
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: (receiverId.isNotEmpty && encryptedFile != null)
+          ? FloatingActionButton(
+              onPressed: () {
+                sendFile();
+              },
+              child: const Icon(Icons.send),
+            )
+          : null,
       appBar: AppBar(
-        title: const Text('AES Key Generator'),
+        title: const Text('WebSocket Client'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              setState(() {
+                ip = ipController.text;
+              });
+              connect();
+            },
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Text(
+              'Server: http://$ip:8080',
+              style: const TextStyle(fontSize: 20),
+            ),
+            const SizedBox(height: 20),
             TextField(
-              controller: inputController1,
-              decoration: const InputDecoration(labelText: 'Input 1'),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              generatedKey.toString(),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                final kt = generateRandomKey(16);
-                setState(() {
-                  generatedKey = base64.encode(Uint8List.fromList(kt));
-
-                  crypt.aesSetKeys(
-                      Uint8List.fromList(kt), Uint8List.fromList(kt));
-                });
+              controller: ipController,
+              decoration: const InputDecoration(
+                labelText: 'Enter IP Address',
+              ),
+              onChanged: (value) {
+                ip = value;
               },
-              child: const Text('Generate Key'),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                encrypt();
-              },
-              child: const Text('Encrypt'),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 20),
             Text(
-              encryptedData,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              "key: $generateKey",
+              style: const TextStyle(fontSize: 20),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                decrypt();
-              },
-              child: const Text('Decrypt'),
+              onPressed: pickFile,
+              child: const Text('Pick File'),
             ),
-            const SizedBox(height: 24),
-            Text(
-              decryptedData,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            if (file != null)
+              Column(
+                children: [
+                  const SizedBox(height: 20),
+                  Text(
+                    "File selected: ${file!.name}",
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  ElevatedButton(
+                    onPressed: encryptFile,
+                    child: const Text('Encrypt File'),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            const SizedBox(height: 20),
+            if (encryptedFile != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Encrypted file: ${encryptedFile!.name}",
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(height: 20, width: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      saveFile(encryptedFile!);
+                    },
+                    child: const Text('Save File'),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 20),
+            if (receivedFile != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Receive file: ${receivedFile!.name}",
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(height: 20, width: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      print("1");
+                      decryptFile();
+                    },
+                    child: const Text('Decrypt File'),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 20),
+            if (decryptedFile != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Decrypted file: ${decryptedFile!.name}",
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(height: 20, width: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      print("2");
+                      saveFile(decryptedFile!);
+                    },
+                    child: const Text('Save File'),
+                  ),
+                ],
+              ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: users.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    onTap: () {
+                      setState(() {
+                        if (!users[index].isMe) {
+                          receiverId = users[index].id;
+                        }
+                      });
+                    },
+                    selected: users[index].id == receiverId,
+                    selectedColor: Colors.blueAccent,
+                    title: Text(users[index].name),
+                    subtitle: Text(users[index].id),
+                    trailing: users[index].isMe
+                        ? const Icon(Icons.check)
+                        : const Icon(Icons.close),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -120,36 +259,52 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void encrypt() async {
-    final files = await FilePicker.platform.pickFiles();
-    if (files!.files.isEmpty) {
-      return;
-    }
-    final file = File(files.files.single.path!);
-    final dt = crypt.aesEncryptFile(FileModel(file));
-
-    await saveFile(dt);
+  void pickFile() async {
+    FilePickerResult? result =
+        await FilePicker.platform.pickFiles(compressionQuality: 1);
+    setState(() {
+      file = FileModel(File(result!.files.single.path!));
+    });
   }
 
-  void decrypt() async {
-    final files = await FilePicker.platform.pickFiles();
-
-    if (files!.files.isEmpty) {
-      return;
-    }
-    final file = File(files.files.single.path!);
-
-    final decrypteFile = crypt.aesDecryptFile(FileModel(file));
-    final decrypted = decrypteFile.bytes;
-    print("Decrypted data: ${decrypted.length}");
-
-    await saveFile(decrypteFile);
+  void encryptFile() {
+    final aesCrypt = AesCrypt();
+    final key = base64.decode(aesKey);
+    aesCrypt.aesSetKeys(Uint8List.fromList(key), Uint8List.fromList(key));
+    aesCrypt.aesSetMode(AesMode.cbc);
+    setState(() {
+      generateKey = base64.encode(key);
+      encryptedFile = aesCrypt.aesEncryptFile(file!);
+    });
   }
 
-  Future<void> saveFile(FileModel fileModel) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final path = '${dir.path}/${fileModel.name}';
-    final file = File(path);
-    await file.writeAsBytes(fileModel.bytes);
+  void decryptFile() {
+    final aesCrypt = AesCrypt();
+    final key = base64.decode(aesKey);
+    aesCrypt.aesSetKeys(Uint8List.fromList(key), Uint8List.fromList(key));
+    aesCrypt.aesSetMode(AesMode.cbc);
+    setState(() {
+      decryptedFile = aesCrypt.aesDecryptFile(receivedFile!);
+    });
+  }
+
+  void sendFile() {
+    final data = {
+      'receiverId': receiverId,
+      'data': base64.encode(encryptedFile!.bytes),
+      'fileName': encryptedFile!.name,
+    };
+    channel?.sink.add(jsonEncode(data));
+  }
+
+  void saveFile(FileModel file) async {
+    final result = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save File',
+      fileName: file.name,
+      bytes: file.bytes,
+    );
+    if (result != null) {
+      await File(result).writeAsBytes(file.bytes);
+    }
   }
 }
