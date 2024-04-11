@@ -2,15 +2,6 @@ import 'dart:typed_data';
 import 'package:aes_kma/algorithm/aescrypt.dart';
 import 'package:aes_kma/algorithm/exceptions.dart';
 
-// This is the ported version of PHP phpAES library
-// http://www.phpaes.com
-// https://github.com/phillipsdata/phpaes
-//
-// Performance measurements on Intel Xeon E5420:
-//
-// This implementation is about 40 times faster than 'pointycastle' Dart lib
-// on 1 Mb data (1,4 vs 55-65 seconds), about 80 times faster on 2 Mb data
-// (2,7 vs 200-240 seconds), and so on.
 
 class Aes {
   // The S-Box substitution table.

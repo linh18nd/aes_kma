@@ -57,7 +57,7 @@ class FileModel {
   FileModel.asset(this.name, this.bytes);
 // \
   FileModel(File file)
-      : name = file.path.split('\\').last,
+      : name = file.path.split('/').last,
         bytes = file.readAsBytesSync();
 
   FileModel copyWith({String? name, Uint8List? bytes}) {
